@@ -1,10 +1,6 @@
 #ifndef LOSTFOUNDSYSTEM_H
 #define LOSTFOUNDSYSTEM_H
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-#include <queue>
-#include <string>
+#include<bits/stdc++.h>
 #include "Item.h"
 
 using namespace std;
