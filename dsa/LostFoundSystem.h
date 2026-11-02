@@ -1,7 +1,14 @@
 #ifndef LOSTFOUNDSYSTEM_H
 #define LOSTFOUNDSYSTEM_H
-#include<bits/stdc++.h>
 #include "Item.h"
+//As clang does not have #include<bits/stdc++.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#include <algorithm>
+#include <cctype>
 
 using namespace std;
 
