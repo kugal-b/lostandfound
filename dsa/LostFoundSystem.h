@@ -1,72 +1,108 @@
 #ifndef LOSTFOUNDSYSTEM_H
 #define LOSTFOUNDSYSTEM_H
+
 #include "Item.h"
-//As clang does not have #include<bits/stdc++.h>
-#include <iostream>
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include <algorithm>
-#include <cctype>
+#include <queue>
 
-using namespace std;
+// Claim structure
+struct Claim
+{
+    int claimId = 0;
+    int lostItemId = 0;
+    int foundItemId = 0;
+    int claimantId = 0;
+    int finderId = 0;
+    std::string status;      // PENDING, ACCEPTED, REJECTED, CANCELLED
+};
 
-class LostFoundSystem {
+// Matching structure
+struct MatchResult
+{
+    int lostItemId;
+    int foundItemId;
+    int score;
+};
 
+// Highest score gets highest priority; ties go to the lower found-item ID
+struct CompareMatch
+{
+    bool operator()(const MatchResult& a, const MatchResult& b) const
+    {
+        if (a.score != b.score)
+            return a.score < b.score;
+        return a.foundItemId > b.foundItemId;
+    }
+};
+
+class LostFoundSystem
+{
 private:
-
     // Main storage
-    vector<Item> lostItems;
-    vector<Item> foundItems;
+    std::vector<Item> lostItems;
+    std::vector<Item> foundItems;
+    std::vector<Claim> claims;
 
-    // Fast ID lookup
-    unordered_map<int, Item> itemMap;
+    // ID-based indexes (kept in sync with the vectors)
+    std::unordered_map<int, Item> lostItemMap;
+    std::unordered_map<int, Item> foundItemMap;
 
-    // Duplicate prevention
-    unordered_set<string> itemKeys;
+    // Duplicate checking (only for ACTIVE items)
+    std::unordered_set<std::string> lostItemKeys;
+    std::unordered_set<std::string> foundItemKeys;
+
+    // ID counters (per system, not shared static state)
+    int nextItemId = 1;
+    int nextClaimId = 1;
+
+    // Helpers
+    std::string createItemKey(const Item& item) const;
+    bool validateItem(Item& item);
 
 public:
-    // 1. Item Management
+    // Item management
     void addLostItem(Item item);
     void addFoundItem(Item item);
-
     void displayLostItems();
     void displayFoundItems();
-
     bool deleteLostItem(int id);
     bool deleteFoundItem(int id);
 
-    // 2. Search
+    // Searching
     Item* searchById(int id);
-    void searchByName(string name);
-    void searchByCategory(string category);
-    void searchByLocation(string location);
+    void searchByName(std::string name);
+    void searchByCategory(std::string category);
+    void searchByLocation(std::string location);
 
-    // 3. Matching
-    int compareName(Item& lost, Item& found);
-    int compareCategory(Item& lost, Item& found);
-    int compareColor(Item& lost, Item& found);
-    int compareLocation(Item& lost, Item& found);
-    int compareDate(Item& lost, Item& found);
+    // Matching
+    int compareName(const Item& lost, const Item& found) const;
+    int compareCategory(const Item& lost, const Item& found) const;
+    int compareColor(const Item& lost, const Item& found) const;
+    int compareLocation(const Item& lost, const Item& found) const;
+    int compareDate(const Item& lost, const Item& found) const;
+    int calculateMatchScore(const Item& lost, const Item& found) const;
+    void findMatches();
+    void displayBestMatches(
+        std::priority_queue<MatchResult,
+                            std::vector<MatchResult>,
+                            CompareMatch>& matches);
 
-    int calculateMatchScore(Item& lost, Item& found);
-    void findMatches(int lostItemId);
-    void displayBestMatches(int lostItemId);
-
-    // 4. Claims
-    void createClaim(int lostItemId, int foundItemId, int claimantId);
+    // Claims
+    void createClaim(int lostItemId, int foundItemId, int claimantId, int finderId);
     void displayClaims(int finderId);
-
-    bool acceptClaim(int claimId, int finderId);
-    bool rejectClaim(int claimId, int finderId);
-
+    void acceptClaim(int claimId, int finderId);
+    void rejectClaim(int claimId, int finderId);
     void markAsReturned(int foundItemId);
+    void markAsRecovered(int lostItemId);
 
-    // 5. Utility
+    // Utility functions
     int generateId();
-    bool checkDuplicate(Item& item);
-    void sortItems();
+    int generateClaimId();
+    bool checkDuplicate(const Item& item, bool isLost) const;
+    void sortItems(std::vector<Item>& items, std::string criterion);
 };
 
 #endif

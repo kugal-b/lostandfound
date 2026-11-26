@@ -1,0 +1,13 @@
+{
+    "configurations": [
+      {
+        "name": "MSYS2 UCRT64",
+        "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
+        "cStandard": "c17",
+        "cppStandard": "c++17",
+        "intelliSenseMode": "windows-gcc-x64",
+        "includePath": ["${workspaceFolder}/dsa"]
+      }
+    ],
+    "version": 4
+  }

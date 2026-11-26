@@ -1,136 +1,261 @@
-#include "LostFoundSystem.h"
 #include <iostream>
 #include <string>
-#include <limits>
+#include <cstdlib>
+#include <cctype>
+#include <stdexcept>
+#include "LostFoundSystem.h"
 
 using namespace std;
+// INPUT HELPERS
+string readLine(const string& message)
+{
+    string line;
+    cout << message;
 
+    if (!getline(cin, line))
+    {
+        cout << "\nInput closed. Exiting...\n";
+        exit(0);
+    }
+    return line;
+}
+
+// Accepts only a whole line that is a valid integer ("12abc" is rejected)
+int getIntegerInput(const string& message)
+{
+    while (true)
+    {
+        string line = readLine(message);
+
+        try
+        {
+            size_t pos = 0;
+            int value = stoi(line, &pos);
+
+            while (pos < line.size() &&
+                   isspace(static_cast<unsigned char>(line[pos])))
+                pos++;
+
+            if (pos == line.size())
+                return value;
+        }
+        catch (const exception&)
+        {
+            // fall through to the error message
+        }
+
+        cout << "Invalid input! Please enter a number.\n";
+    }
+}
+
+// TAKE ITEM DETAILS
+Item inputItem()
+{
+    Item item;
+
+    cout << "\n========== ENTER ITEM DETAILS ==========\n";
+
+    item.reporterId = getIntegerInput("Enter your User ID: ");
+    item.name        = readLine("Enter item name: ");
+    item.category    = readLine("Enter category: ");
+    item.color       = readLine("Enter color: ");
+    item.location    = readLine("Enter location: ");
+    item.date        = readLine("Enter date (YYYY-MM-DD): ");
+    item.description = readLine("Enter description: ");
+
+    return item;
+}
+
+// SEARCH SUBMENU
+void searchMenu(LostFoundSystem& app)
+{
+    int choice;
+
+    do
+    {
+        cout << "\n========== SEARCH ITEMS ==========\n";
+        cout << "1. Search by ID\n";
+        cout << "2. Search by Name\n";
+        cout << "3. Search by Category\n";
+        cout << "4. Search by Location\n";
+        cout << "5. Back\n";
+
+        choice = getIntegerInput("Enter your choice: ");
+
+        switch (choice)
+        {
+            case 1:
+            {
+                int id = getIntegerInput("Enter Item ID: ");
+                Item* item = app.searchById(id);
+
+                if (item != nullptr)
+                {
+                    cout << "\nItem Found!\n";
+                    cout << "ID: " << item->id << endl;
+                    cout << "Name: " << item->name << endl;
+                    cout << "Category: " << item->category << endl;
+                    cout << "Color: " << item->color << endl;
+                    cout << "Location: " << item->location << endl;
+                    cout << "Date: " << item->date << endl;
+                    cout << "Description: " << item->description << endl;
+                    cout << "Status: " << item->status << endl;
+                }
+                break;
+            }
+
+            case 2:
+                app.searchByName(readLine("Enter item name: "));
+                break;
+
+            case 3:
+                app.searchByCategory(readLine("Enter category: "));
+                break;
+
+            case 4:
+                app.searchByLocation(readLine("Enter location: "));
+                break;
+
+            case 5:
+                cout << "Returning to main menu...\n";
+                break;
+
+            default:
+                cout << "Invalid choice!\n";
+        }
+
+    } while (choice != 5);
+}
+
+// CLAIM MANAGEMENT SUBMENU
+
+void claimMenu(LostFoundSystem& app)
+{
+    int choice;
+
+    do
+    {
+        cout << "\n========== CLAIM MANAGEMENT ==========\n";
+        cout << "1. View Claims\n";
+        cout << "2. Create Claim\n";
+        cout << "3. Accept Claim\n";
+        cout << "4. Reject Claim\n";
+        cout << "5. Back\n";
+
+        choice = getIntegerInput("Enter your choice: ");
+
+        switch (choice)
+        {
+            case 1:
+            {
+                int finderId = getIntegerInput("Enter your Finder ID: ");
+                app.displayClaims(finderId);
+                break;
+            }
+
+            case 2:
+            {
+                int lostId     = getIntegerInput("Enter Lost Item ID: ");
+                int foundId    = getIntegerInput("Enter Found Item ID: ");
+                int claimantId = getIntegerInput("Enter your Claimant ID: ");
+                int finderId   = getIntegerInput("Enter Finder ID: ");
+
+                app.createClaim(lostId, foundId, claimantId, finderId);
+                break;
+            }
+
+            case 3:
+            {
+                int claimId  = getIntegerInput("Enter Claim ID: ");
+                int finderId = getIntegerInput("Enter your Finder ID: ");
+                app.acceptClaim(claimId, finderId);
+                break;
+            }
+
+            case 4:
+            {
+                int claimId  = getIntegerInput("Enter Claim ID: ");
+                int finderId = getIntegerInput("Enter your Finder ID: ");
+                app.rejectClaim(claimId, finderId);
+                break;
+            }
+
+            case 5:
+                cout << "Returning to main menu...\n";
+                break;
+
+            default:
+                cout << "Invalid choice!\n";
+        }
+
+    } while (choice != 5);
+}
+
+// MAIN FUNCTION
 int main()
 {
-  LostFoundSystem system;
+    LostFoundSystem app;   // not named "system": that would shadow std::system
 
-  // Create sample lost items
-  Item item1;
-  item1.id = 1;
-  item1.name = "Black Wallet";
-  item1.category = "Accessories";
-  item1.color = "Black";
-  item1.location = "Library";
-  item1.date = "01-11-2026";
-  item1.description = "Leather wallet";
-  item1.status = "LOST";
+    int choice;
 
-  Item item2;
-  item2.id = 2;
-  item2.name = "Red Bag";
-  item2.category = "Accessories";
-  item2.color = "Red";
-  item2.location = "Library Ground Floor";
-  item2.date = "02-11-2026";
-  item2.description = "Small red backpack";
-  item2.status = "LOST";
+    do
+    {
+        cout << "\n";
+        cout << "============================================\n";
+        cout << "          LOST AND FOUND SYSTEM             \n";
+        cout << "============================================\n";
+        cout << "1. Report Lost Item\n";
+        cout << "2. Report Found Item\n";
+        cout << "3. Display Lost Items\n";
+        cout << "4. Display Found Items\n";
+        cout << "5. Search Item\n";
+        cout << "6. Find Matches\n";
+        cout << "7. Manage Claims\n";
+        cout << "8. Exit\n";
+        cout << "============================================\n";
 
-  // Create sample found items
-  Item item3;
-  item3.id = 3;
-  item3.name = "Blue Bottle";
-  item3.category = "Bottle";
-  item3.color = "Blue";
-  item3.location = "Canteen";
-  item3.date = "01-11-2026";
-  item3.description = "Steel water bottle";
-  item3.status = "FOUND";
+        choice = getIntegerInput("Enter your choice: ");
 
-  Item item4;
-  item4.id = 4;
-  item4.name = "Black Wallet";
-  item4.category = "Accessories";
-  item4.color = "Black";
-  item4.location = "Sports Ground";
-  item4.date = "03-11-2026";
-  item4.description = "Wallet found near the ground";
-  item4.status = "FOUND";
+        switch (choice)
+        {
+            case 1:
+                app.addLostItem(inputItem());
+                break;
 
-  // Add items to the system
-  system.addLostItem(item1);
-  system.addLostItem(item2);
+            case 2:
+                app.addFoundItem(inputItem());
+                break;
 
-  system.addFoundItem(item3);
-  system.addFoundItem(item4);
+            case 3:
+                app.displayLostItems();
+                break;
 
-  int choice;
+            case 4:
+                app.displayFoundItems();
+                break;
 
-  do {
-    cout << "\n===== SEARCH SYSTEM TEST =====\n";
-    cout << "1. Search by ID\n";
-    cout << "2. Search by Name\n";
-    cout << "3. Search by Category\n";
-    cout << "4. Search by Location\n";
-    cout << "5. Exit\n";
-    cout << "Enter your choice: ";
-    cin >> choice;
+            case 5:
+                searchMenu(app);
+                break;
 
-    if (choice == 1) {
-      int id;
+            case 6:
+                app.findMatches();
+                break;
 
-      cout << "Enter item ID: ";
-      cin >> id;
+            case 7:
+                claimMenu(app);
+                break;
 
-      Item* result = system.searchById(id);
+            case 8:
+                cout << "\nThank you for using Lost and Found System!\n";
+                cout << "Exiting program...\n";
+                break;
 
-      if (result != nullptr) {
-        cout << "\nItem Found!\n";
-        cout << "ID: " << result->id << endl;
-        cout << "Name: " << result->name << endl;
-        cout << "Category: " << result->category << endl;
-        cout << "Color: " << result->color << endl;
-        cout << "Location: " << result->location << endl;
-        cout << "Status: " << result->status << endl;
-      }
-      else {
-        cout << "No item found with ID: " << id << endl;
-      }
-    }
+            default:
+                cout << "Invalid choice! Please try again.\n";
+        }
 
-    else if (choice == 2) {
-      string name;
+    } while (choice != 8);
 
-      cout << "Enter item name: ";
-      cin.ignore(numeric_limits<streamsize>::max(), '\n');
-      getline(cin, name);
-
-      system.searchByName(name);
-    }
-
-    else if (choice == 3) {
-      string category;
-
-      cout << "Enter category: ";
-      cin.ignore(numeric_limits<streamsize>::max(), '\n');
-      getline(cin, category);
-
-      system.searchByCategory(category);
-    }
-
-    else if (choice == 4) {
-      string location;
-
-      cout << "Enter location: ";
-      cin.ignore(numeric_limits<streamsize>::max(), '\n');
-      getline(cin, location);
-
-      system.searchByLocation(location);
-    }
-
-    else if (choice == 5) {
-      cout << "Exiting search test...\n";
-    }
-
-    else {
-      cout << "Invalid choice. Try again.\n";
-    }
-
-  } while (choice != 5);
-
-  return 0;
+    return 0;
 }
