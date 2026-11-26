@@ -455,9 +455,10 @@ namespace
       "Search Items",
       "Report an Item",
       "Delete an Item",
+      "Find Matches",
       "Exit"
     };
-    const vector<string> navIcons = {"⌂", "◌", "●", "◎", "✚", "✖", "➜"};
+    const vector<string> navIcons = {"⌂", "◌", "●", "◎", "✚", "✖", "⇄", "➜"};
 
     int selectedPage = 0;
     string outputMessage = "Welcome. Select an option from the sidebar.";
@@ -483,6 +484,7 @@ namespace
     auto lostView = make_shared<ListView>();
     auto foundView = make_shared<ListView>();
     auto searchView = make_shared<ListView>();
+    auto matchesView = make_shared<ListView>();
 
     // Search controls
     vector<string> searchTypes = {"Name", "Category", "Location", "ID"};
@@ -780,6 +782,30 @@ namespace
       }) | flex;
     });
 
+    // ---- Find Matches -------------------------------------------------------
+    // Reuse the DSA matching function so the TUI uses the same scoring rules
+    // and priority queue as the console application.
+    auto matchesRenderer = Renderer([&] {
+      if (matchesView->version != dataVersion) {
+        matchesView->raw = captureOutput([&] { system.findMatches(); });
+        matchesView->structured = false;
+        matchesView->sel = 0;
+        matchesView->top = 0;
+        matchesView->version = dataVersion;
+      }
+
+      return vbox({
+        pageHeader("Find Matches", "Potential matches ranked by score"),
+        text("Matches are grouped by lost item; the highest-scoring found reports appear first.") | color(kMuted),
+        scrollableText(matchesView->raw, matchesView->sel) | flex
+      }) | flex;
+    });
+    matchesRenderer |= CatchEvent([matchesView](Event event) {
+      if (event == Event::ArrowDown) { moveSel(*matchesView, 1); return true; }
+      if (event == Event::ArrowUp)   { moveSel(*matchesView, -1); return true; }
+      return false;
+    });
+
     // ---- Exit ---------------------------------------------------------------
     auto exitPage = Renderer([] {
       return vbox({
@@ -797,6 +823,7 @@ namespace
       searchRenderer,
       reportRenderer,
       deleteRenderer,
+      matchesRenderer,
       exitPage
     };
 
@@ -868,7 +895,7 @@ namespace
         screen.Exit();                              // Esc in the sidebar quits
         return true;
       }
-      if (selectedPage == 6) {
+      if (selectedPage == 7) {
         screen.Exit();
         return true;
       }
@@ -890,7 +917,7 @@ namespace
           default: return nullptr;
         }
       };
-      bool pageHasFocus = selectedPage >= 1 && selectedPage <= 5;
+      bool pageHasFocus = selectedPage >= 1 && selectedPage <= 6;
 
       if (event.is_mouse()) {
         // Clicking the sidebar / the page switches zone.
@@ -924,6 +951,7 @@ namespace
       if (selectedPage == 1) view = lostView;
       else if (selectedPage == 2) view = foundView;
       else if (selectedPage == 3) view = searchView;
+      else if (selectedPage == 6) view = matchesView;
       if (view) {
         if (event == Event::PageDown) { moveSel(*view, 3); return true; }
         if (event == Event::PageUp)   { moveSel(*view, -3); return true; }
