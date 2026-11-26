@@ -492,7 +492,7 @@ namespace
     // Report form controls
     vector<string> reportTypes = {"Lost", "Found"};
     int selectedReportType = 0;
-    string itemName, category, itemColor, location, date, description;
+    string reporterIdText, itemName, category, itemColor, location, date, description;
 
     // Delete controls
     vector<string> deleteTypes = {"Lost item", "Found item"};
@@ -678,14 +678,35 @@ namespace
 
     // ---- Report -------------------------------------------------------------
     auto reportType = Dropdown(&reportTypes, &selectedReportType);
+    auto reporterIdInput = Input(&reporterIdText, "Positive numeric user ID", styledInput());
     auto nameInput = Input(&itemName, "Item name", styledInput());
     auto categoryInput = Input(&category, "Category", styledInput());
     auto colorInput = Input(&itemColor, "Color", styledInput());
     auto locationInput = Input(&location, "Location", styledInput());
-    auto dateInput = Input(&date, "Date (DD-MM-YYYY)", styledInput());
+    auto dateInput = Input(&date, "Date (YYYY-MM-DD)", styledInput());
     auto descriptionInput = Input(&description, "Description", styledInput());
     auto reportButton = Button("Submit item", [&] {
+      int reporterIdValue = 0;
+      try {
+        size_t used = 0;
+        reporterIdValue = stoi(reporterIdText, &used);
+
+        while (used < reporterIdText.size() &&
+               isspace(static_cast<unsigned char>(reporterIdText[used]))) {
+          ++used;
+        }
+
+        if (used != reporterIdText.size() || reporterIdValue <= 0) {
+          throw invalid_argument("Invalid reporter ID");
+        }
+      } catch (...) {
+        outputMessage = "Invalid reporter ID. Enter a positive number.";
+        armMessage();
+        return;
+      }
+
       Item item{};
+      item.reporterId = reporterIdValue;
       item.name = itemName;
       item.category = category;
       item.color = itemColor;
@@ -698,18 +719,22 @@ namespace
         else system.addFoundItem(item);
       });
 
-      ++dataVersion;
+      bool added = outputMessage.find("successfully registered") != string::npos;
+      if (added) {
+        ++dataVersion;
+        reporterIdText.clear(); itemName.clear(); category.clear();
+        itemColor.clear(); location.clear(); date.clear(); description.clear();
+      }
       armMessage();
-      itemName.clear(); category.clear(); itemColor.clear();
-      location.clear(); date.clear(); description.clear();
     }, styledButton(kGood));
-    auto reportPage = Container::Vertical({reportType, nameInput, categoryInput,
+    auto reportPage = Container::Vertical({reportType, reporterIdInput, nameInput, categoryInput,
       colorInput, locationInput, dateInput, descriptionInput, reportButton});
     auto reportRenderer = Renderer(reportPage, [&] {
       return vbox({
         pageHeader("Report an Item", "Fill in the details and submit"),
         formRow("Report type", reportType),
         text(""),
+        formRow("Reporter ID", reporterIdInput),
         formRow("Name", nameInput),
         formRow("Category", categoryInput),
         formRow("Color", colorInput),
@@ -853,6 +878,7 @@ namespace
         switch (selectedPage) {
           case 3: return searchInput->Focused() ? &searchQuery : nullptr;
           case 4:
+            if (reporterIdInput->Focused()) return &reporterIdText;
             if (nameInput->Focused()) return &itemName;
             if (categoryInput->Focused()) return &category;
             if (colorInput->Focused()) return &itemColor;
